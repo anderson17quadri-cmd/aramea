@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "Araméa",
+    "slug": "aramea",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "aramea",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.andersonquadri.aramea",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.andersonquadri.aramea",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#FAF6F2",
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#FAF6F2"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#6E7262"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "A Araméa precisa de acesso às fotos para anexar imagens às encomendas.",
+          "cameraPermission": "A Araméa precisa da câmara para fotografar as encomendas."
+        }
+      ],
+      "expo-sharing"
+    ],
+    "extra": {
+      "router": {},
+      "supabaseUrl": "https://SEU-PROJETO.supabase.co",
+      "supabaseAnonKey": "COLE-AQUI-A-ANON-KEY"
+    }
+  }
+}

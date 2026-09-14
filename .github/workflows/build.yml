@@ -1,0 +1,109 @@
+name: Build Araméa (iOS + Android)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Libertar espaço em disco
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/ndk /opt/ghc /opt/hostedtoolcache/CodeQL 2>/dev/null || true
+          df -h /
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar projeto nativo Android
+        run: npx expo prebuild --platform android --no-install
+        env:
+          CI: 1
+
+      - name: Compilar APK (release, assinado com a chave de debug)
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+
+      - name: Preparar ficheiro
+        run: cp android/app/build/outputs/apk/release/app-release.apk aramea.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aramea-android-apk
+          path: aramea.apk
+          retention-days: 14
+
+  ios:
+    name: iOS IPA (sem assinatura)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Escolher o Xcode mais recente
+        run: |
+          ls -d /Applications/Xcode*.app
+          LATEST=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          echo "A usar $LATEST"
+          sudo xcode-select -s "$LATEST/Contents/Developer"
+          xcodebuild -version
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar projeto nativo iOS
+        run: npx expo prebuild --platform ios
+        env:
+          CI: 1
+
+      - name: Compilar (Release, sem assinatura)
+        run: |
+          WS=$(ls -d ios/*.xcworkspace | head -1)
+          SCHEME=$(basename "$WS" .xcworkspace)
+          echo "Workspace: $WS  Scheme: $SCHEME"
+          set -o pipefail
+          xcodebuild \
+            -workspace "$WS" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/aramea.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            archive | tail -n 200
+
+      - name: Empacotar .ipa
+        run: |
+          APP=$(ls -d "$RUNNER_TEMP"/aramea.xcarchive/Products/Applications/*.app | head -1)
+          echo "App: $APP"
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry aramea-unsigned.ipa Payload
+          ls -lh aramea-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aramea-ios-ipa
+          path: aramea-unsigned.ipa
+          retention-days: 14

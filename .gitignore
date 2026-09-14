@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.zip
+*.apk
+.expo/
+.env.local
+.env.*.local
+yarn-install.log
+expo-env.d.ts
+/android
+/ios
