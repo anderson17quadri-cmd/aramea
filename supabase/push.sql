@@ -39,6 +39,11 @@ $$;
 
 grant execute on function public.aramea_save_push_subscription(text, text, text, text) to anon, authenticated;
 
+-- A Edge Function usa a chave interna (service_role): precisa de acesso às tabelas aramea_.
+grant select, insert, update, delete on public.aramea_push_subscriptions, public.aramea_push_log, public.aramea_orders, public.aramea_clients, public.aramea_products to service_role;
+grant execute on function public.aramea_complete_overdue_orders() to service_role;
+grant execute on function public.aramea_save_push_subscription(text, text, text, text) to service_role;
+
 -- Agendamento de hora em hora (minuto 0) → chama a Edge Function.
 create extension if not exists pg_net with schema extensions;
 create extension if not exists pg_cron with schema pg_catalog;
