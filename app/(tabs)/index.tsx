@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Calendar, DateData, LocaleConfig } from 'react-native-calendars';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LogoMark } from '../../src/components/Logo';
@@ -10,6 +10,8 @@ import { EmptyState } from '../../src/components/ui/EmptyState';
 import { ErrorBanner } from '../../src/components/ui/ErrorBanner';
 import { useOrders } from '../../src/hooks/useOrders';
 import { supabaseConfigured } from '../../src/services/supabase';
+import { enablePush, getPushState, PushState } from '../../src/services/webPush';
+import { notify } from '../../src/utils/alert';
 import { brand, status as statusColors } from '../../src/theme/colors';
 import { liftShadow, radius, softShadow, spacing } from '../../src/theme/spacing';
 import { useTheme } from '../../src/theme/ThemeContext';
@@ -117,6 +119,43 @@ export default function HomeScreen() {
 
   const dayRevenue = dayOrders.reduce((sum, o) => sum + (o.price ?? 0), 0);
 
+  // Notificações da web app (iPhone com a app no ecrã principal).
+  const [pushState, setPushState] = useState<PushState>('unsupported');
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') getPushState().then(setPushState).catch(() => {});
+  }, []);
+
+  const handleBell = async () => {
+    const state = await getPushState();
+    if (state === 'needs-install') {
+      notify(
+        'Instala primeiro a app',
+        'No Safari: Partilhar → "Adicionar ao ecrã principal". Depois abre a Araméa pelo ícone e toca outra vez no sino.',
+      );
+      return;
+    }
+    if (state === 'unsupported') {
+      notify('Sem suporte', 'Este navegador não recebe notificações. No iPhone precisas do iOS 16.4 ou mais recente.');
+      return;
+    }
+    if (state === 'denied') {
+      notify('Notificações bloqueadas', 'Ativa-as em Definições → Notificações → Araméa.');
+      return;
+    }
+    setPushBusy(true);
+    try {
+      await enablePush();
+      setPushState('enabled');
+      notify('Notificações ativas', 'Vais receber "Entrega amanhã!" às 21h e os lembretes de hora a hora no dia da entrega.');
+    } catch (e) {
+      notify('Notificações', e instanceof Error ? e.message : 'Não foi possível ativar.');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -130,6 +169,15 @@ export default function HomeScreen() {
             <Text style={styles.brand}>ARAMÉA</Text>
             <Text style={styles.heroSub}>{capitalize(formatDateLong(today))}</Text>
           </View>
+          {Platform.OS === 'web' && (
+            <Pressable style={styles.themeBtn} onPress={handleBell} hitSlop={10} accessibilityLabel="Notificações" disabled={pushBusy}>
+              {pushBusy ? (
+                <ActivityIndicator size="small" color={theme.accent} />
+              ) : (
+                <Ionicons name={pushState === 'enabled' ? 'notifications' : 'notifications-outline'} size={18} color={theme.accent} />
+              )}
+            </Pressable>
+          )}
           <Pressable style={styles.themeBtn} onPress={toggle} hitSlop={10} accessibilityLabel="Mudar tema">
             <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={theme.accent} />
           </Pressable>

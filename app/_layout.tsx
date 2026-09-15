@@ -13,6 +13,7 @@ import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { completeOverdueOrders } from '../src/services/database';
 import { onNotificationTap, syncReminders } from '../src/services/notifications';
 import { supabaseConfigured } from '../src/services/supabase';
+import { registerServiceWorker } from '../src/services/webPush';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -29,6 +30,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (!ready) return;
     SplashScreen.hideAsync().catch(() => {});
+    registerServiceWorker();
     if (supabaseConfigured) {
       // Fecha o que passou da hora há mais de 1h e reagenda os lembretes.
       completeOverdueOrders()
