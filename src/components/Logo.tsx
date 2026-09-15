@@ -66,6 +66,24 @@ export function Logo({ size = 180, color = brand.primary, ringColor = brand.ring
   );
 }
 
+/** Versão pequena para cabeçalhos: anel duplo com o "A" e a conta dourada. */
+export function LogoMark({ size = 44, color = brand.primary, ringColor = brand.ring }: { size?: number; color?: string; ringColor?: string }) {
+  return (
+    <View style={{ width: size, height: size }}>
+      <Svg width={size} height={size} viewBox="0 0 100 100" style={StyleSheet.absoluteFill}>
+        <Circle cx={50} cy={50} r={47} stroke={ringColor} strokeWidth={2.2} fill="none" />
+        <Circle cx={50} cy={50} r={41.5} stroke={ringColor} strokeWidth={1.2} fill="none" />
+        <Circle cx={50} cy={79} r={3.2} fill={brand.bead} />
+      </Svg>
+      <View style={[StyleSheet.absoluteFill, styles.center]}>
+        <Text allowFontScaling={false} style={{ fontFamily: font.serif, fontSize: size * 0.5, color, marginTop: -size * 0.06 }}>
+          A
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
 });

@@ -169,7 +169,13 @@ export function buildShareMessage(order: Order): string {
 export async function shareMessage(order: Order): Promise<void> {
   const message = buildShareMessage(order);
   if (Platform.OS === 'web') {
-    await navigator.clipboard?.writeText(message);
+    // No iPhone (Safari / ecrã principal) abre a folha de partilha nativa.
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      await navigator.share({ text: message });
+    } else {
+      await navigator.clipboard?.writeText(message);
+      window.alert('Mensagem copiada — cola no WhatsApp ou Instagram.');
+    }
     return;
   }
   await Share.share({ message });

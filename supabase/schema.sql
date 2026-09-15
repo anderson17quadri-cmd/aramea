@@ -1,12 +1,14 @@
 -- =====================================================================
--- ARAMÉA — correr TUDO de uma vez no Supabase → SQL Editor → Run.
+-- ARAMÉA — tabelas dentro do projeto Supabase "agendado-pt".
+-- Tudo tem o prefixo aramea_ para não tocar em nada do agendado.pt.
 -- Pode voltar a correr-se sem estragar nada (idempotente).
+-- Os únicos "drop" são de políticas/triggers com nome aramea_ (recriados logo a seguir).
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
 -- 1. Tabelas
 -- ---------------------------------------------------------------------
-create table if not exists public.orders (
+create table if not exists public.aramea_orders (
   id              uuid primary key default gen_random_uuid(),
   client_name     text not null,
   client_phone    text,
@@ -33,10 +35,10 @@ create table if not exists public.orders (
   updated_at      timestamptz not null default now()
 );
 
-create index if not exists orders_delivery_date_idx on public.orders (delivery_date);
-create index if not exists orders_client_name_idx on public.orders (lower(client_name));
+create index if not exists aramea_orders_delivery_date_idx on public.aramea_orders (delivery_date);
+create index if not exists aramea_orders_client_name_idx on public.aramea_orders (lower(client_name));
 
-create table if not exists public.clients (
+create table if not exists public.aramea_clients (
   id              uuid primary key default gen_random_uuid(),
   name            text not null,
   phone           text,
@@ -46,10 +48,9 @@ create table if not exists public.clients (
   updated_at      timestamptz not null default now()
 );
 
--- Nome único (sem diferenças de maiúsculas/espaços).
-create unique index if not exists clients_name_unique_idx on public.clients (lower(btrim(name)));
+create unique index if not exists aramea_clients_name_unique_idx on public.aramea_clients (lower(btrim(name)));
 
-create table if not exists public.products (
+create table if not exists public.aramea_products (
   id          uuid primary key default gen_random_uuid(),
   name        text not null,
   category    text,
@@ -57,24 +58,26 @@ create table if not exists public.products (
 );
 
 -- ---------------------------------------------------------------------
--- 2. Acesso (app sem login → papel anon)
+-- 2. Acesso (a app não tem login → papel anon)
 -- ---------------------------------------------------------------------
-alter table public.orders   enable row level security;
-alter table public.clients  enable row level security;
-alter table public.products enable row level security;
+alter table public.aramea_orders   enable row level security;
+alter table public.aramea_clients  enable row level security;
+alter table public.aramea_products enable row level security;
 
-drop policy if exists "anon orders"   on public.orders;
-drop policy if exists "anon clients"  on public.clients;
-drop policy if exists "anon products" on public.products;
+drop policy if exists "aramea_orders_all"   on public.aramea_orders;
+drop policy if exists "aramea_clients_all"  on public.aramea_clients;
+drop policy if exists "aramea_products_all" on public.aramea_products;
 
-create policy "anon orders"   on public.orders   for all to anon, authenticated using (true) with check (true);
-create policy "anon clients"  on public.clients  for all to anon, authenticated using (true) with check (true);
-create policy "anon products" on public.products for all to anon, authenticated using (true) with check (true);
+create policy "aramea_orders_all"   on public.aramea_orders   for all to anon, authenticated using (true) with check (true);
+create policy "aramea_clients_all"  on public.aramea_clients  for all to anon, authenticated using (true) with check (true);
+create policy "aramea_products_all" on public.aramea_products for all to anon, authenticated using (true) with check (true);
+
+grant select, insert, update, delete on public.aramea_orders, public.aramea_clients, public.aramea_products to anon, authenticated;
 
 -- ---------------------------------------------------------------------
 -- 3. Cliente guardado automaticamente a cada encomenda
 -- ---------------------------------------------------------------------
-create or replace function public.sync_client_from_order()
+create or replace function public.aramea_sync_client_from_order()
 returns trigger
 language plpgsql
 security definer
@@ -88,35 +91,27 @@ begin
     return new;
   end if;
 
-  insert into public.clients (name, phone, source_channel)
+  insert into public.aramea_clients (name, phone, source_channel)
   values (v_name, v_phone, coalesce(new.source_channel, 'WhatsApp'))
   on conflict (lower(btrim(name))) do update
-    set phone          = coalesce(excluded.phone, public.clients.phone),
-        source_channel = coalesce(excluded.source_channel, public.clients.source_channel),
+    set phone          = coalesce(excluded.phone, public.aramea_clients.phone),
+        source_channel = coalesce(excluded.source_channel, public.aramea_clients.source_channel),
         updated_at     = now();
 
   return new;
 end;
 $$;
 
-drop trigger if exists trg_sync_client_from_order on public.orders;
-create trigger trg_sync_client_from_order
+drop trigger if exists aramea_trg_sync_client on public.aramea_orders;
+create trigger aramea_trg_sync_client
   after insert or update of client_name, client_phone, source_channel
-  on public.orders
-  for each row execute function public.sync_client_from_order();
+  on public.aramea_orders
+  for each row execute function public.aramea_sync_client_from_order();
 
 -- ---------------------------------------------------------------------
 -- 4. "Concluída" automaticamente 1 hora depois da hora de entrega
 -- ---------------------------------------------------------------------
-create or replace function public.order_delivery_at(p_date text, p_time text)
-returns timestamp
-language sql
-immutable
-as $$
-  select (p_date || ' ' || coalesce(nullif(btrim(coalesce(p_time, '')), ''), '23:59'))::timestamp
-$$;
-
-create or replace function public.complete_overdue_orders()
+create or replace function public.aramea_complete_overdue_orders()
 returns integer
 language plpgsql
 security definer
@@ -126,13 +121,13 @@ declare
   v_count integer;
 begin
   with atrasadas as (
-    update public.orders
+    update public.aramea_orders
        set status = 'completed',
            paid = true,
            updated_at = now()
      where status in ('pending', 'in_production')
        and delivery_date ~ '^\d{4}-\d{2}-\d{2}$'
-       and public.order_delivery_at(delivery_date, delivery_time)
+       and (delivery_date || ' ' || coalesce(nullif(btrim(coalesce(delivery_time, '')), ''), '23:59'))::timestamp
              + interval '1 hour' <= (now() at time zone 'Europe/Lisbon')
     returning 1
   )
@@ -141,10 +136,9 @@ begin
 end;
 $$;
 
-grant execute on function public.complete_overdue_orders() to anon, authenticated;
+grant execute on function public.aramea_complete_overdue_orders() to anon, authenticated;
 
--- Data do pagamento (preenchida sozinha ao marcar como paga).
-create or replace function public.stamp_order_payment()
+create or replace function public.aramea_stamp_order_payment()
 returns trigger
 language plpgsql
 as $$
@@ -158,42 +152,42 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_stamp_order_payment on public.orders;
-create trigger trg_stamp_order_payment
-  before update of paid on public.orders
-  for each row execute function public.stamp_order_payment();
+drop trigger if exists aramea_trg_stamp_payment on public.aramea_orders;
+create trigger aramea_trg_stamp_payment
+  before update of paid on public.aramea_orders
+  for each row execute function public.aramea_stamp_order_payment();
 
 -- ---------------------------------------------------------------------
--- 5. Tempo real para os produtos (o formulário atualiza sozinho)
+-- 5. Tempo real para os produtos
 -- ---------------------------------------------------------------------
 do $$
 begin
-  alter publication supabase_realtime add table public.products;
+  alter publication supabase_realtime add table public.aramea_products;
 exception
   when duplicate_object then null;
   when undefined_object then null;
 end $$;
 
 -- ---------------------------------------------------------------------
--- 6. Storage: bucket público "photos"
+-- 6. Storage: bucket público "aramea-photos"
 -- ---------------------------------------------------------------------
 insert into storage.buckets (id, name, public)
-values ('photos', 'photos', true)
-on conflict (id) do update set public = true;
+values ('aramea-photos', 'aramea-photos', true)
+on conflict (id) do nothing;
 
-drop policy if exists "photos insert anon" on storage.objects;
-drop policy if exists "photos select anon" on storage.objects;
+drop policy if exists "aramea_photos_insert" on storage.objects;
+drop policy if exists "aramea_photos_select" on storage.objects;
 
-create policy "photos insert anon" on storage.objects
-  for insert to anon, authenticated with check (bucket_id = 'photos');
+create policy "aramea_photos_insert" on storage.objects
+  for insert to anon, authenticated with check (bucket_id = 'aramea-photos');
 
-create policy "photos select anon" on storage.objects
-  for select to anon, authenticated using (bucket_id = 'photos');
+create policy "aramea_photos_select" on storage.objects
+  for select to anon, authenticated using (bucket_id = 'aramea-photos');
 
 -- ---------------------------------------------------------------------
--- 7. Produtos iniciais (só se a tabela estiver vazia)
+-- 7. Produtos iniciais (só se ainda não houver nenhum)
 -- ---------------------------------------------------------------------
-insert into public.products (name, category)
+insert into public.aramea_products (name, category)
 select v.name, v.category
 from (values
   ('Rosa',              'Flores'),
@@ -208,4 +202,6 @@ from (values
   ('Coroa de flores',   'Arranjos'),
   ('Vaso decorativo',   'Vasos')
 ) as v(name, category)
-where not exists (select 1 from public.products);
+where not exists (select 1 from public.aramea_products);
+
+select 'ok' as aramea_setup;

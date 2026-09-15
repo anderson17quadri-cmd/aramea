@@ -38,7 +38,8 @@ export async function uploadPhoto(uri: string): Promise<string> {
         uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
         headers: {
           apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          // As chaves novas (sb_publishable_…) não são JWT: só vão no apikey.
+          ...(SUPABASE_ANON_KEY.startsWith('eyJ') ? { Authorization: `Bearer ${SUPABASE_ANON_KEY}` } : {}),
           'Content-Type': 'image/jpeg',
         },
       });

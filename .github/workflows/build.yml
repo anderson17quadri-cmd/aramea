@@ -1,4 +1,4 @@
-name: Build Araméa (iOS + Android)
+name: Build Araméa (Android + iOS nativo)
 
 on:
   workflow_dispatch:
@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths-ignore:
       - '**.md'
+      - 'supabase/**'
+      - 'scripts/**'
 
 jobs:
   android:
@@ -52,6 +54,8 @@ jobs:
 
   ios:
     name: iOS IPA (sem assinatura)
+    # Só quando lançado à mão: a versão iPhone usada no dia a dia é a web app.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4

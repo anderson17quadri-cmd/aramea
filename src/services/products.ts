@@ -1,5 +1,5 @@
 import { toDataError } from './errors';
-import { supabase, supabaseConfigured } from './supabase';
+import { supabase, supabaseConfigured, TABLES } from './supabase';
 import { Product } from '../types';
 
 function fromRow(row: Record<string, unknown>): Product {
@@ -13,7 +13,7 @@ function fromRow(row: Record<string, unknown>): Product {
 
 export async function getAllProducts(): Promise<Product[]> {
   const { data, error } = await supabase
-    .from('products')
+    .from(TABLES.products)
     .select('*')
     .order('category', { ascending: true, nullsFirst: false })
     .order('name', { ascending: true });
@@ -22,20 +22,20 @@ export async function getAllProducts(): Promise<Product[]> {
 }
 
 export async function createProduct(name: string, category: string): Promise<void> {
-  const { error } = await supabase.from('products').insert({ name: name.trim(), category: category.trim() || null });
+  const { error } = await supabase.from(TABLES.products).insert({ name: name.trim(), category: category.trim() || null });
   if (error) throw toDataError(error, 'adicionar o produto');
 }
 
 export async function updateProduct(id: string, name: string, category: string | null): Promise<void> {
   const { error } = await supabase
-    .from('products')
+    .from(TABLES.products)
     .update({ name: name.trim(), category: category?.trim() || null })
     .eq('id', id);
   if (error) throw toDataError(error, 'guardar o produto');
 }
 
 export async function deleteProduct(id: string): Promise<void> {
-  const { error } = await supabase.from('products').delete().eq('id', id);
+  const { error } = await supabase.from(TABLES.products).delete().eq('id', id);
   if (error) throw toDataError(error, 'excluir o produto');
 }
 
@@ -45,7 +45,7 @@ export function subscribeProducts(onChange: () => void): () => void {
   try {
     const channel = supabase
       .channel(`products-${Math.random().toString(36).slice(2)}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => onChange())
+      .on('postgres_changes', { event: '*', schema: 'public', table: TABLES.products }, () => onChange())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);

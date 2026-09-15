@@ -1,5 +1,7 @@
 import { toDataError } from './errors';
-import { supabase } from './supabase';
+import { supabase, TABLES } from './supabase';
+
+const ORDERS = TABLES.orders;
 import { Order, OrderInput, OrderItem } from '../types';
 
 const statusToDb: Record<string, string> = {
@@ -103,20 +105,20 @@ export function fromRow(row: Record<string, unknown>): Order {
 const mapRows = (data: unknown[] | null) => (data ?? []).map((r) => fromRow(r as Record<string, unknown>));
 
 export async function createOrder(data: OrderInput): Promise<string> {
-  const { data: row, error } = await supabase.from('orders').insert(toRow(data)).select('id').single();
+  const { data: row, error } = await supabase.from(ORDERS).insert(toRow(data)).select('id').single();
   if (error) throw toDataError(error, 'guardar a encomenda');
   return (row as { id: string }).id;
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
-  const { data, error } = await supabase.from('orders').select('*').eq('id', id).maybeSingle();
+  const { data, error } = await supabase.from(ORDERS).select('*').eq('id', id).maybeSingle();
   if (error) throw toDataError(error, 'abrir a encomenda');
   return data ? fromRow(data as Record<string, unknown>) : null;
 }
 
 export async function getOrdersByDate(date: string): Promise<Order[]> {
   const { data, error } = await supabase
-    .from('orders')
+    .from(ORDERS)
     .select('*')
     .eq('delivery_date', date)
     .order('delivery_time', { ascending: true, nullsFirst: false });
@@ -126,7 +128,7 @@ export async function getOrdersByDate(date: string): Promise<Order[]> {
 
 export async function getOrdersBetween(from: string, to: string): Promise<Order[]> {
   const { data, error } = await supabase
-    .from('orders')
+    .from(ORDERS)
     .select('*')
     .gte('delivery_date', from)
     .lte('delivery_date', to)
@@ -137,7 +139,7 @@ export async function getOrdersBetween(from: string, to: string): Promise<Order[
 }
 
 export async function getActiveOrdersCount(): Promise<{ pending: number; production: number }> {
-  const { data, error } = await supabase.from('orders').select('status').in('status', ['pending', 'in_production']);
+  const { data, error } = await supabase.from(ORDERS).select('status').in('status', ['pending', 'in_production']);
   if (error) throw toDataError(error, 'carregar as encomendas');
   const rows = (data ?? []) as Array<{ status: string }>;
   return {
@@ -148,7 +150,7 @@ export async function getActiveOrdersCount(): Promise<{ pending: number; product
 
 export async function searchOrders(query: string, statusFilter?: string, dateFrom?: string, dateTo?: string): Promise<Order[]> {
   let q = supabase
-    .from('orders')
+    .from(ORDERS)
     .select('*')
     .order('delivery_date', { ascending: true })
     .order('delivery_time', { ascending: true, nullsFirst: false })
@@ -177,7 +179,7 @@ export async function getOrdersByMonth(year: number, month: number): Promise<Ord
 
 export async function updateOrder(id: string, data: Partial<OrderInput>): Promise<void> {
   const { error } = await supabase
-    .from('orders')
+    .from(ORDERS)
     .update({ ...toRow(data), updated_at: new Date().toISOString() })
     .eq('id', id);
   if (error) throw toDataError(error, 'guardar as alterações');
@@ -187,7 +189,7 @@ export async function updateOrderStatus(id: string, status: string): Promise<voi
   const row: Record<string, unknown> = { status: statusToDb[status] ?? status, updated_at: new Date().toISOString() };
   // Concluída ou entregue presume-se liquidada — evita dívidas fantasma.
   if (status === 'Concluída' || status === 'Entregue') row.paid = true;
-  const { error } = await supabase.from('orders').update(row).eq('id', id);
+  const { error } = await supabase.from(ORDERS).update(row).eq('id', id);
   if (error) throw toDataError(error, 'alterar o estado');
 }
 
@@ -196,13 +198,13 @@ export async function updateOrderStatus(id: string, status: string): Promise<voi
  * de 1 hora. Corre no Postgres (relógio único, fuso Europe/Lisbon).
  */
 export async function completeOverdueOrders(): Promise<number> {
-  const { data, error } = await supabase.rpc('complete_overdue_orders');
+  const { data, error } = await supabase.rpc(TABLES.completeOverdueRpc);
   if (error) return 0;
   return typeof data === 'number' ? data : 0;
 }
 
 export async function deleteOrder(id: string): Promise<void> {
-  const { error } = await supabase.from('orders').delete().eq('id', id);
+  const { error } = await supabase.from(ORDERS).delete().eq('id', id);
   if (error) throw toDataError(error, 'excluir a encomenda');
 }
 
@@ -211,7 +213,7 @@ export async function getMarkedDatesData(year: number, month: number): Promise<A
   const lastDay = new Date(year, month, 0).getDate();
   const to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
   const { data, error } = await supabase
-    .from('orders')
+    .from(ORDERS)
     .select('delivery_date, status')
     .gte('delivery_date', from)
     .lte('delivery_date', to);

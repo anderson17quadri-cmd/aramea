@@ -17,4 +17,15 @@ export const supabase = createClient(
   { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } },
 );
 
-export const PHOTOS_BUCKET = 'photos';
+/**
+ * A Araméa partilha o projeto Supabase "agendado-pt" (limite de 2 projetos
+ * grátis), por isso tudo o que é dela tem o prefixo aramea_.
+ */
+export const TABLES = {
+  orders: 'aramea_orders',
+  clients: 'aramea_clients',
+  products: 'aramea_products',
+  completeOverdueRpc: 'aramea_complete_overdue_orders',
+} as const;
+
+export const PHOTOS_BUCKET = 'aramea-photos';

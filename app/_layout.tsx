@@ -8,7 +8,7 @@ import { router, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { completeOverdueOrders } from '../src/services/database';
 import { onNotificationTap, syncReminders } from '../src/services/notifications';
@@ -23,7 +23,8 @@ export default function RootLayout() {
     CormorantGaramond_600SemiBold,
     CormorantGaramond_700Bold,
   });
-  const ready = fontsLoaded || !!fontError;
+  // Na web não se espera pelas fontes: a app aparece logo e a letra troca sozinha.
+  const ready = fontsLoaded || !!fontError || Platform.OS === 'web';
 
   useEffect(() => {
     if (!ready) return;

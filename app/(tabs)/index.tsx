@@ -4,7 +4,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Calendar, DateData, LocaleConfig } from 'react-native-calendars';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Logo } from '../../src/components/Logo';
+import { LogoMark } from '../../src/components/Logo';
 import { OrderCard } from '../../src/components/OrderCard';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { ErrorBanner } from '../../src/components/ui/ErrorBanner';
@@ -125,11 +125,14 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.accent} colors={[brand.primary]} />}
       >
         <View style={styles.hero}>
+          <LogoMark size={46} color={theme.accent} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.brand}>ARAMÉA</Text>
+            <Text style={styles.heroSub}>{capitalize(formatDateLong(today))}</Text>
+          </View>
           <Pressable style={styles.themeBtn} onPress={toggle} hitSlop={10} accessibilityLabel="Mudar tema">
             <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={theme.accent} />
           </Pressable>
-          <Logo size={170} color={theme.accent} />
-          <Text style={styles.heroSub}>Gestão de encomendas</Text>
         </View>
 
         {!supabaseConfigured && (
@@ -229,11 +232,16 @@ function Stat({
 const makeStyles = (t: Theme) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: t.background },
-    hero: { alignItems: 'center', paddingTop: spacing.md, paddingBottom: spacing.md },
+    hero: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingHorizontal: spacing.md + 2,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.md,
+    },
+    brand: { fontFamily: font.serif, fontSize: 24, letterSpacing: 4, color: t.text, lineHeight: 28 },
     themeBtn: {
-      position: 'absolute',
-      right: spacing.md,
-      top: spacing.sm,
       width: 36,
       height: 36,
       borderRadius: 18,
@@ -241,7 +249,7 @@ const makeStyles = (t: Theme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    heroSub: { fontSize: 11, color: t.textMuted, fontWeight: '700', letterSpacing: 3, textTransform: 'uppercase', marginTop: spacing.sm },
+    heroSub: { fontSize: 13, color: t.textMuted, fontWeight: '600' },
     statsRow: { flexDirection: 'row', gap: spacing.sm, marginHorizontal: spacing.md },
     statCard: {
       flex: 1,

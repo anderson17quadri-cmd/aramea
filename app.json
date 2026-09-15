@@ -27,7 +27,14 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "output": "single"
+      "output": "single",
+      "name": "Araméa",
+      "shortName": "Araméa",
+      "themeColor": "#FAF6F2",
+      "backgroundColor": "#FAF6F2"
+    },
+    "experiments": {
+      "baseUrl": "/aramea"
     },
     "plugins": [
       "expo-router",
@@ -59,8 +66,8 @@
     ],
     "extra": {
       "router": {},
-      "supabaseUrl": "https://SEU-PROJETO.supabase.co",
-      "supabaseAnonKey": "COLE-AQUI-A-ANON-KEY"
+      "supabaseUrl": "https://vvgpykbmpwgdtcgakwod.supabase.co",
+      "supabaseAnonKey": "sb_publishable_zOSncEB4Vzl3zaMf4QzYHg_9Or_0pQm"
     }
   }
 }

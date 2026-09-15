@@ -1,5 +1,5 @@
 import { toDataError } from './errors';
-import { supabase } from './supabase';
+import { supabase, TABLES } from './supabase';
 import { Client } from '../types';
 
 function fromRow(row: Record<string, unknown>): Client {
@@ -14,7 +14,7 @@ function fromRow(row: Record<string, unknown>): Client {
 }
 
 export async function getAllClients(): Promise<Client[]> {
-  const { data, error } = await supabase.from('clients').select('*').order('name', { ascending: true });
+  const { data, error } = await supabase.from(TABLES.clients).select('*').order('name', { ascending: true });
   if (error) throw toDataError(error, 'carregar os clientes');
   return (data ?? []).map((r) => fromRow(r as Record<string, unknown>));
 }
@@ -22,7 +22,7 @@ export async function getAllClients(): Promise<Client[]> {
 export async function searchClients(query: string): Promise<Client[]> {
   const term = query.trim().replace(/[%_\\]/g, (c) => `\\${c}`);
   const { data, error } = await supabase
-    .from('clients')
+    .from(TABLES.clients)
     .select('*')
     .ilike('name', `%${term}%`)
     .order('name', { ascending: true });
@@ -34,6 +34,6 @@ export async function searchClients(query: string): Promise<Client[]> {
 // Postgres (sync_client_from_order) sempre que se grava uma encomenda.
 
 export async function deleteClient(id: string): Promise<void> {
-  const { error } = await supabase.from('clients').delete().eq('id', id);
+  const { error } = await supabase.from(TABLES.clients).delete().eq('id', id);
   if (error) throw toDataError(error, 'excluir o cliente');
 }
