@@ -7,7 +7,7 @@ import webpush from 'npm:web-push@3.6.7';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const VAPID_PUBLIC_KEY = 'BDOayDjVteWnTmdeNua4pEErwcFnnCEMnKYHANgzGmrMckAqv9wjggIsNE8hAgq72oqa5X_bUoSETfULzZIo7Oo';
-const SITE = 'https://aramea.vercel.app/';
+const SITE = 'https://aramea-studio.vercel.app/';
 const DEFAULT_TIME = '18:00';
 
 const cors = {

@@ -9,3 +9,6 @@ yarn-install.log
 expo-env.d.ts
 /android
 /ios
+
+.vercel
+.env*
