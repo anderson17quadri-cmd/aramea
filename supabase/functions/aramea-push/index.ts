@@ -7,7 +7,7 @@ import webpush from 'npm:web-push@3.6.7';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const VAPID_PUBLIC_KEY = 'BDOayDjVteWnTmdeNua4pEErwcFnnCEMnKYHANgzGmrMckAqv9wjggIsNE8hAgq72oqa5X_bUoSETfULzZIo7Oo';
-const SITE = 'https://anderson17quadri-cmd.github.io/aramea/';
+const SITE = 'https://aramea.vercel.app/';
 const DEFAULT_TIME = '18:00';
 
 const cors = {
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
       title: r.kind === 'eve' ? 'Entrega amanhã!' : `Entrega hoje${hora}`,
       body: `${r.order.client_name}${r.kind === 'eve' ? hora : ''} · ${what}`,
       tag: `order-${r.order.id}`,
-      url: `/aramea/order/${r.order.id}`,
+      url: `order/${r.order.id}`,
     });
   }
 

@@ -4,7 +4,7 @@ import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const dist = process.argv[2] ?? 'dist';
-const base = '/aramea';
+const base = process.env.VERCEL ? '' : '/aramea';
 const indexPath = join(dist, 'index.html');
 let html = readFileSync(indexPath, 'utf8');
 

@@ -2,7 +2,8 @@ import { supabase } from './supabase';
 
 /** Chave pública VAPID (a privada está só nos Secrets do Supabase). */
 const VAPID_PUBLIC_KEY = 'BDOayDjVteWnTmdeNua4pEErwcFnnCEMnKYHANgzGmrMckAqv9wjggIsNE8hAgq72oqa5X_bUoSETfULzZIo7Oo';
-const BASE = '/aramea';
+/** "" na Vercel, "/aramea" no GitHub Pages (definido pelo Expo no build). */
+const BASE = (process.env.EXPO_BASE_URL ?? '').replace(/\/$/, '');
 
 export type PushState = 'unsupported' | 'needs-install' | 'denied' | 'disabled' | 'enabled';
 

@@ -33,9 +33,6 @@
       "themeColor": "#FAF6F2",
       "backgroundColor": "#FAF6F2"
     },
-    "experiments": {
-      "baseUrl": "/aramea"
-    },
     "plugins": [
       "expo-router",
       "expo-font",
